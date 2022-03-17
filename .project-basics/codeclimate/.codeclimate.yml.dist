@@ -1,0 +1,61 @@
+version: "2"
+exclude_patterns:
+  - "**/tests/"
+  - "**/vendor/"
+  - "**/node_modules/"
+  - "web/wp/"
+  - "web/app/plugins/"
+  - "web/app/mu-plugins/"
+  - "!web/app/mu-plugins/app-core/"
+  - "web/app/mu-plugins/app-core/App.php" # php:S1848, instanciation de classes non utilisées
+  - "web/app/mu-plugins/app-core/ACFBlocks/ACFBlocksBootstrap.php" # php:S1848, instanciation de classes non utilisées
+  - "web/app/themes/bedrock/resources/assets/styles/lib/"
+plugins:
+  sonar-php:
+    enabled: true
+    config:
+      minimum_severity: minor
+
+  phpmd:
+    enabled: true
+    config:
+      file_extensions:
+        - php
+        - phtml
+      rulesets: ".project-basics/codeclimate/phpmd_ruleset.xml"
+
+  phpcodesniffer:
+    enabled: true
+    config:
+      file_extensions: "php"
+      standard: "PSR1,PSR2"
+      # no option to specify config file path
+      # https://github.com/codeclimate/codeclimate-phpcodesniffer
+
+  phan:
+    enabled: true
+    config:
+      file_extensions: "php"
+
+  stylelint:
+    enabled: true
+    config: web/app/themes/bedrock/.stylelintrc
+
+  # Does not work well with Tailwind directives and no config option
+  csslint:
+    enabled: false
+
+  # No SCSS here
+  scss-lint:
+    enabled: false
+  #    config:
+  #      linters:
+  #        Comment:
+  #          exclude: '**/*.css'
+
+  eslint:
+    enabled: true
+    config:
+      extensions:
+        - .js
+      config: web/app/themes/bedrock/.eslintrc.json

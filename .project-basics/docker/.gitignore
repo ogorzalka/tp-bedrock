@@ -1,0 +1,21 @@
+# WP-CLI
+db-sync
+sql-dump-*.sql
+src/*
+
+# Database volume
+data
+
+docker/auth/*
+
+# Certs
+certs/
+
+# Logs
+logs/
+
+# Vagrant
+bin
+
+# Custom
+.DS_Store

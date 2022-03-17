@@ -1,0 +1,4 @@
+include:
+  - project: 'amphibee/bedrock/project-basics-bedrock'
+    ref: master
+    file: 'gitlab/deploy.gitlab-ci.yml'

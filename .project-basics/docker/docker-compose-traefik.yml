@@ -1,0 +1,65 @@
+version: "2"
+services:
+  php:
+    labels:
+      - traefik.enable=false
+
+  httpd:
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.httpd.rule=Host(`bedrock.docker.localhost`)
+      - traefik.http.routers.httpd.tls=true
+
+
+  #varnish:
+  #  networks:
+  #    - default
+  #    - traefik
+  #  labels:
+  #    - traefik.enable=true
+  #    - traefik.backend=varnish
+  #    - traefik.frontend.rule=Host:bedrock.docker.localhost
+  #    - traefik.port=80
+  #    - traefik.docker.network=traefik
+
+  db:
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.db.rule=Host(`db-bedrock.docker.localhost`)
+      - traefik.http.routers.db.tls=true
+
+  mailhog:
+    ports:
+      - 8025
+      - 1025
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mailhog.rule=Host(`mail-bedrock.docker.localhost`)
+      - traefik.http.routers.mailhog.tls=true
+
+  mongo:
+    labels:
+      - traefik.enable=false
+
+  pma:
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.pma.rule=Host(`pma-bedrock.docker.localhost`)
+      - traefik.http.routers.pma.tls=true
+
+networks:
+  traefik:
+    external:
+      name: traefik

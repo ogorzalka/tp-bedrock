@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export SLACK_PAYLOAD='{"text": "Hey <!channel> \n '"$CI_COMMIT_REF_NAME"' deploy failed! \n '"$CI_COMMIT_MESSAGE"'" ,"channel": "'"$ENV_SLACK_CHANNEL"'", "username": "'"$GITLAB_USER_NAME"' - Gitlab CI - '"$CI_PROJECT_NAME"'('"$CI_COMMIT_BRANCH"')"}'
+echo $SLACK_PAYLOAD
+curl -X POST https://hooks.slack.com/services/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 -H 'cache-control: no-cache' -H 'content-type: application/json' -d @- <<EOF
+$SLACK_PAYLOAD
+EOF

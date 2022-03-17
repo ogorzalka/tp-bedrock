@@ -1,0 +1,8 @@
+version: "2"
+services:
+  #varnish:
+  #  ports:
+  #    - 80:80
+  pma:
+    ports:
+      - 8080:80

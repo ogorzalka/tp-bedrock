@@ -1,0 +1,181 @@
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
+stages:
+  - test
+  - git-robot
+  - deploy
+  - notify
+
+code_quality:
+  image: docker.adexos.fr/docker:19.03.12
+  allow_failure: true
+  services:
+  #  variables:
+  #    CODE_QUALITY_IMAGE: "docker.adexos.fr/codequality:0.85.22"
+  before_script:
+    - apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community php php7-ctype php7-simplexml php7-tokenizer php7-xmlwriter php7-fileinfo
+    - apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community composer git nodejs yarn
+    - apk add --update openssh-client bash
+    - eval $(ssh-agent -s)
+    - bash -c 'ssh-add <(echo "$SSH_PRIVATE_KEY")'
+    - mkdir -p ~/.ssh
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+    - composer self-update --1
+    - composer config --global http-basic.ruche.amphibee.fr ${RUCHE_LOGIN} ${RUCHE_PASSWORD}
+    - composer install --no-dev --prefer-dist --no-interaction --quiet --optimize-autoloader
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - export SOURCE_CODE=$PWD
+    - |
+      if ! docker info &>/dev/null; then
+        if [ -z "$DOCKER_HOST" -a "$KUBERNETES_PORT" ]; then
+          export DOCKER_HOST='tcp://localhost:2375'
+        fi
+      fi
+    - | # this is required to avoid undesirable reset of Docker image ENV variables being set on build stage
+      function propagate_env_vars() {
+        CURRENT_ENV=$(printenv)
+
+        for VAR_NAME; do
+          echo $CURRENT_ENV | grep "${VAR_NAME}=" > /dev/null && echo "--env $VAR_NAME "
+        done
+      }
+    - docker pull --quiet "$CODE_QUALITY_IMAGE"
+    - |
+      docker run \
+        $(propagate_env_vars \
+          SOURCE_CODE \
+          TIMEOUT_SECONDS \
+          CODECLIMATE_DEBUG \
+          CODECLIMATE_DEV \
+          REPORT_STDOUT \
+          REPORT_FORMAT \
+          ENGINE_MEMORY_LIMIT_BYTES \
+        ) \
+        --volume "$PWD":/code \
+        --volume /var/run/docker.sock:/var/run/docker.sock \
+        "$CODE_QUALITY_IMAGE" /code
+    - '[ "$(head gl-code-quality-report.json)" = "[]" ] || exit 1'
+  artifacts:
+    paths: [ gl-code-quality-report.json ]
+  rules:
+    - if: '$CODE_QUALITY_DISABLED'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"' # Run code quality job in merge request pipelines
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'      # Run code quality job in pipelines on the master branch (but not in other branch pipelines)
+  tags:
+    - cq-sans-dind     # Set this job to only run on our new specialized runner
+
+git-rebase-preprod:
+  stage: git-robot
+  image: docker.adexos.fr/adexos/deployment:latest
+  tags:
+    - adexos
+  only:
+    - develop
+  allow_failure: true
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - git config --global user.email "dev+gitbot@adexos.fr"
+    - git config --global user.name "Mr. Robot"
+    - mkdir -p ~/.ssh
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+  script:
+    - git clone git@gitlab.com:${CI_PROJECT_PATH}.git
+    - cd ${CI_PROJECT_NAME}
+    - git checkout develop
+    - git checkout preprod
+    - git rebase develop
+    - git push --force origin preprod
+
+.deploy: &deploy
+  image: docker.adexos.fr/adexos/deployment:latest
+  tags:
+    - adexos
+  before_script:
+    # SSH Needs
+    - which ssh-agent || apt-get install openssh-client -y
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+
+.notify: &notify
+  image: docker.adexos.fr/adexos/deployment:latest
+  tags:
+    - adexos
+  stage: notify
+  before_script:
+    # SSH Needs
+    - which ssh-agent || apt-get install openssh-client -y
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  only:
+    - preprod
+    - master
+
+deploy_staging:
+  <<: *deploy
+  image: registry.gitlab.com/amphibee/louvre-lens-vall-e/project-basics-bedrock/deployer:latest
+  stage: deploy
+  script:
+    - composer config --global gitlab-oauth.gitlab.com $GITLAB_COMPOSER_TOKEN
+    - composer config --global http-basic.ruche.amphibee.fr ${RUCHE_LOGIN} ${RUCHE_PASSWORD}
+    - composer install --no-dev
+    - rm -rf .git .gitlab-ci.yml .project-basics .gitmodules
+    - ssh-keyscan ssh.cluster023.hosting.ovh.net >> ~/.ssh/known_hosts
+    - rsync -az . bedrockfus-amphibee@ssh.cluster023.hosting.ovh.net:/homez.105/bedrockfus/preprod-amphibee
+  cache:
+    paths:
+      - vendor/
+      - web/app/themes/bedrock/vendor
+      - web/app/themes/bedrock/node_modules
+  only:
+    - preprod
+
+deploy_production:
+  <<: *deploy
+  image: registry.gitlab.com/amphibee/louvre-lens-vall-e/project-basics-bedrock/deployer:latest
+  stage: deploy
+  script:
+    - composer config --global gitlab-oauth.gitlab.com $GITLAB_COMPOSER_TOKEN
+    - composer config --global http-basic.ruche.amphibee.fr ${RUCHE_LOGIN} ${RUCHE_PASSWORD}
+    - composer install --no-dev
+    - rm -rf .git .gitlab-ci.yml .project-basics .gitmodules
+    - ssh-keyscan ssh.cluster023.hosting.ovh.net >> ~/.ssh/known_hosts
+    - rsync -az . bedrockfus-amphibee@ssh.cluster023.hosting.ovh.net:/homez.105/bedrockfus/production
+  cache:
+    paths:
+      - vendor/
+      - web/app/themes/bedrock/vendor
+      - web/app/themes/bedrock/node_modules
+  only:
+    - master
+
+notify_success:
+  <<: *notify
+  script:
+    - export ENV_SLACK_CHANNEL="#bedrock"
+    - sh .project-basics/gitlab/scripts/notify-success
+  when: on_success
+
+notify_failure:
+  <<: *notify
+  script:
+    - export ENV_SLACK_CHANNEL="#bedrock"
+    - sh .project-basics/gitlab/scripts/notify-failure
+  when: on_failure

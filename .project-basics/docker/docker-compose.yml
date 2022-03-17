@@ -1,0 +1,99 @@
+version: "2"
+services:
+  #varnish:
+  #  image: varnish:6.3
+  #  depends_on:
+  #    - httpd
+  #  networks:
+  #    - default
+  #  ports:
+  #    - 6082
+  #  volumes:
+  #    - ./config/varnish/default.vcl:/etc/varnish/default.vcl
+  #  environment:
+  #    VARNISH_MANAGEMENT_LISTEN: 0.0.0.0:6082
+
+  httpd:
+    image: httpd:2.4
+    depends_on:
+      - php
+    ports:
+      - 80
+    volumes_from:
+      - appdata
+    volumes:
+      - ./config/httpd/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ./config/httpd/vhost.conf:/usr/local/apache2/conf/vhost.conf:ro
+    networks:
+      - default
+
+  php:
+    build:
+      context: .
+      dockerfile: build/php/Dockerfile
+      args:
+        DOCKER_WWW_DATA_GID: ${DOCKER_WWW_DATA_GID}
+        DOCKER_WWW_DATA_UID: ${DOCKER_WWW_DATA_UID}
+    working_dir: /app
+    volumes_from:
+      - appdata
+    networks:
+      - default
+    volumes:
+      - ./scripts/install.sh:/docker/install.sh
+      - ./config/php/php.ini:/usr/local/etc/php/conf.d/php.ini:ro
+      - ./config/php/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug-20.ini:ro
+      - ./scripts/setup-xdebug.sh:/docker/setup-xdebug.sh
+
+  db:
+    image: mariadb:10.4
+    ports:
+      - 3306
+    volumes_from:
+      - dbdata
+    networks:
+      - default
+    env_file:
+      - ./envs/mysql.env
+    volumes:
+      - ./config/mysql/mysql-secure-file.cnf:/etc/mysql/conf.d/mysql-secure-file.cnf
+
+  mailhog:
+    image: docker.adexos.fr/adexos/mailhog
+    depends_on:
+      - mongo
+    networks:
+      - default
+
+  mongo:
+    image: mongo
+    networks:
+      - default
+    volumes_from:
+      - mongodata
+
+  pma:
+    image: phpmyadmin/phpmyadmin:latest
+    networks:
+      - default
+    environment:
+      PMA_HOSTS: db
+      UPLOAD_LIMIT: 256M
+
+  appdata:
+    image: tianon/true
+    volumes:
+      - ./../../:/app
+
+  dbdata:
+    image: tianon/true
+    volumes:
+      - ./../../data/mysql:/var/lib/mysql
+
+  mongodata:
+    image: tianon/true
+    volumes:
+      - ./../../data/mongo:/data/db
+
+networks:
+  default:
