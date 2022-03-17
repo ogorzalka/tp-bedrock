@@ -8,12 +8,50 @@
           "slug": "primary",
           "color": "#525ddc",
           "name": "Primary"
+        },
+        {
+          "slug": "secondary",
+          "color": "#f7f7f7",
+          "name": "Secondary"
+        },
+        {
+          "slug": "tertiary",
+          "color": "#3B3B3B",
+          "name": "Tertiary"
+        },
+        {
+          "slug": "quaternary",
+          "color": "#F5F5F5",
+          "name": "Quaternary"
         }
       ],
       "custom": false,
       "customGradient": false,
       "defaultPalette": false,
       "defaultGradients": false
+    },
+    "blocks": {
+      "core/heading": {
+        "typography": {
+          "fontSizes": [
+            {
+              "name": "M",
+              "slug": "m",
+              "size": "20px"
+            },
+            {
+              "name": "L",
+              "slug": "l",
+              "size": "25px"
+            },
+            {
+              "name": "Xl",
+              "slug": "xl",
+              "size": "30px"
+            }
+          ]
+        }
+      }
     },
     "custom": {
       "spacing": {},
@@ -27,7 +65,34 @@
       "units": ["px", "%", "em", "rem", "vw", "vh"]
     },
     "typography": {
-      "customFontSize": false
+      "customFontSize": false,
+      "fontSizes": [
+        {
+          "name": "XXS",
+          "slug": "xxs",
+          "size": "16px"
+        },
+        {
+          "name": "S",
+          "slug": "s",
+          "size": "18px"
+        },
+        {
+          "name": "M",
+          "slug": "m",
+          "size": "20px"
+        },
+        {
+          "name": "L",
+          "slug": "l",
+          "size": "25px"
+        },
+        {
+          "name": "Xl",
+          "slug": "xl",
+          "size": "30px"
+        }
+      ]
     }
   }
 }

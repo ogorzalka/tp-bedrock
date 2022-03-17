@@ -39,7 +39,7 @@
     }
   },
   "require": {
-    "php": "^7.4|^8.0",
+    "php": "^7.4",
     "roots/acorn": "^2.0"
   },
   "require-dev": {
@@ -64,7 +64,9 @@
   "extra": {
     "acorn": {
       "providers": [
-        "App\\Providers\\ThemeServiceProvider"
+        "App\\Providers\\ThemeServiceProvider",
+        "App\\Providers\\Block\\LatestPost",
+        "App\\Providers\\Block\\ContentImage"
       ]
     }
   }

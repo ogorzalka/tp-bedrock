@@ -7,12 +7,6 @@
   @while(have_posts()) @php(the_post())
     @include('partials.page-header')
     @includeFirst(['partials.content-page', 'partials.content'])
-
-    <x-latest-posts :args="[
-      'posts_per_page' => 3
-    ]">
-      <h1>Derniers articles</h1>
-    </x-latest-posts>
   @endwhile
 @endsection
 
