@@ -15,6 +15,9 @@ use function Roots\bundle;
  */
 add_action('wp_enqueue_scripts', function () {
     bundle('app')->enqueue();
+    wp_enqueue_script('jquery');
+    wp_enqueue_style('swiper/css', 'https://unpkg.com/swiper@8/swiper-bundle.min.css');
+    wp_enqueue_script('swiper/js', 'https://unpkg.com/swiper@8/swiper-bundle.min.js', ['jquery'], null, true);
     wp_enqueue_style('fontawesome.css', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css');
 }, 100);
 
@@ -25,6 +28,9 @@ add_action('wp_enqueue_scripts', function () {
  */
 add_action('enqueue_block_editor_assets', function () {
     bundle('editor')->enqueue();
+
+    wp_enqueue_style('swiper/css', 'https://unpkg.com/swiper@8/swiper-bundle.min.css');
+    wp_enqueue_script('swiper/js', 'https://unpkg.com/swiper@8/swiper-bundle.min.js', ['jquery'], null, true);
 }, 100);
 
 /**

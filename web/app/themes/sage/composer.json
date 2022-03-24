@@ -66,7 +66,8 @@
       "providers": [
         "App\\Providers\\ThemeServiceProvider",
         "App\\Providers\\Block\\LatestPost",
-        "App\\Providers\\Block\\ContentImage"
+        "App\\Providers\\Block\\ContentImage",
+        "App\\Providers\\Block\\Slider"
       ]
     }
   }
