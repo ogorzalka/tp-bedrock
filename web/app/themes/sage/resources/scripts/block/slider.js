@@ -2,16 +2,14 @@
  * initializeBlock
  */
 var initializeBlock = function( block ) {
-
-  console.log('initialize block');
   // if it's the acf objet
   if (block instanceof jQuery) {
     block = block.get(0);
   }
 
-  let $slider = block.classList.contains('swiper') ? block : block.querySelector('.swiper');
+  let slider = block.classList.contains('swiper') ? block : block.querySelector('.swiper');
 
-  new Swiper($slider, {
+  new Swiper(slider, {
     loop: true,
     navigation: {
       nextEl: '.swiper-button-next',
